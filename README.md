@@ -1,201 +1,200 @@
 # 🎵 Spotify Stats & Playlist Genius
 
-⚠️ **AVISO**: Devido a mudanças na API do Spotify (Nov 2024), algumas funcionalidades estão temporariamente indisponíveis. [Leia mais](./SPOTIFY_API_DEPRECATION_NOTICE.md)
+Uma aplicação web interativa moderna que oferece insights poderosos sobre seus hábitos musicais do Spotify com funcionalidades inovadoras de descoberta musical.
 
-Uma aplicação web interativa que permite aos usuários visualizar suas estatísticas musicais do Spotify. **Funcionalidades de análise de playlists estão temporariamente indisponíveis devido a limitações da API.**
+## ✨ **Funcionalidades Principais**
 
-![Spotify Genius Preview](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Styled Components](https://img.shields.io/badge/styled--components-DB7093?style=for-the-badge&logo=styled-components&logoColor=white)
+### 🏠 **Dashboard Inteligente**
+- 📊 Estatísticas personalizadas dos seus hábitos musicais
+- 🎤 Top artistas e músicas por diferentes períodos
+- 🕒 Histórico das músicas tocadas recentemente
+- 🆕 Novos lançamentos e descobertas
 
-## ✨ Funcionalidades
+### 🕒 **Timeline Musical**
+- 📅 Linha do tempo visual das suas músicas
+- 🔍 Filtros por período (hoje, ontem, última semana)
+- 📈 Estatísticas detalhadas de escuta
+- 📱 Interface responsiva e interativa
 
-- 🔐 **Autenticação OAuth 2.0** com Spotify
-- 📊 **Estatísticas Personalizadas**: Visualize seus artistas e músicas mais ouvidos
-- 🎯 **Análise Temporal**: Dados dos últimos 30 dias, 6 meses ou de todos os tempos
-- 🎵 **Análise de Playlist**: Características de áudio com gráficos interativos
-- 🤖 **Gerador Inteligente**: Crie playlists baseadas em parâmetros de áudio
-- 📱 **Design Responsivo**: Interface otimizada para mobile e desktop
+### 🎤 **Explorer de Artistas**
+- 🔍 Busca avançada de artistas
+- 📊 Informações detalhadas e discografia completa
+- 🎵 Top tracks e albums do artista
+- 👥 Sistema de seguir/parar de seguir
 
-## 🛠️ Stack Tecnológico
+### 🔍 **Discovery Hub**
+- 🎯 Busca universal (músicas, artistas, albums, playlists)
+- 🎭 Exploração por gêneros musicais
+- 🔥 Filtros rápidos pré-configurados
+- 🆕 Seção de novos lançamentos
 
-- **Framework**: React 19 + TypeScript
-- **Build Tool**: Vite
+## 🚀 **Tecnologias Utilizadas**
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **Estilização**: Styled Components com design system moderno
 - **Roteamento**: React Router DOM
-- **HTTP Client**: Axios
-- **Estilização**: Styled Components
-- **Gráficos**: Recharts
-- **Linting**: ESLint
+- **Estado**: React Hooks + Context API
+- **Requisições**: Axios com interceptors
+- **Datas**: date-fns com localização PT-BR
+- **Autenticação**: OAuth 2.0 + PKCE (Proof Key for Code Exchange)
+- **Deploy**: Vercel com configuração SPA
 
-## 🚀 Configuração e Instalação
+## 📋 **Pré-requisitos**
 
-### 1. Pré-requisitos
+1. **Node.js** (versão 16 ou superior)
+2. **Conta no Spotify Developer Dashboard**
+3. **Client ID** do Spotify configurado
 
-- Node.js (versão 16 ou superior)
-- npm ou yarn
-- Conta no Spotify (para uso da aplicação)
-- Conta de desenvolvedor do Spotify
+## 🛠️ **Configuração e Instalação**
 
-### 2. Configuração do Spotify Developer Dashboard
-
-1. Acesse o [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/)
-2. Faça login com sua conta do Spotify
-3. Clique em **"Create App"**
-4. Preencha os dados da aplicação:
-   - **App name**: `Spotify Genius`
-   - **App description**: `Aplicação para análise de estatísticas musicais`
-   - **Website**: `http://localhost:5173` (durante desenvolvimento)
-   - **Redirect URIs**: `http://localhost:5173/callback`
-5. Salve a aplicação e anote o **Client ID**
-
-### 3. Instalação do Projeto
-
+### 1. Clone o repositório
 ```bash
-# Clone o repositório
 git clone https://github.com/seu-usuario/spotify-genius.git
 cd spotify-genius
+```
 
-# Instale as dependências
+### 2. Instale as dependências
+```bash
 npm install
 ```
 
-### 4. Configuração das Variáveis de Ambiente
-
-1. Crie um arquivo `.env.local` na raiz do projeto:
-
+### 3. Configure as variáveis de ambiente
+Crie um arquivo `.env.local` na raiz do projeto:
 ```env
-VITE_CLIENT_ID=seu_client_id_do_spotify_aqui
+VITE_CLIENT_ID=seu_spotify_client_id_aqui
 VITE_REDIRECT_URI=http://localhost:5173/callback
 ```
 
-2. Substitua `seu_client_id_do_spotify_aqui` pelo Client ID obtido no Spotify Developer Dashboard
+### 4. Configure o Spotify Developer Dashboard
+1. Acesse [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Crie um novo app ou use um existente
+3. Adicione as URLs de redirecionamento:
+   - `http://localhost:5173/callback` (desenvolvimento)
+   - `https://seu-dominio.vercel.app/callback` (produção)
+4. Copie o **Client ID** para o arquivo `.env.local`
 
-### 5. Executar o Projeto
-
+### 5. Execute o projeto
 ```bash
-# Modo de desenvolvimento
 npm run dev
-
-# Build para produção
-npm run build
-
-# Preview do build de produção
-npm run preview
 ```
 
 A aplicação estará disponível em `http://localhost:5173`
 
-## 📁 Estrutura do Projeto
+## 📁 **Estrutura do Projeto**
 
 ```
 src/
 ├── components/          # Componentes reutilizáveis
+│   ├── Navigation.tsx   # Barra de navegação
 │   ├── LoadingSpinner.tsx
 │   └── ErrorMessage.tsx
-├── context/            # React Context
-├── hooks/              # Hooks customizados
-│   ├── useAuth.ts
-│   └── useSpotifyData.ts
-├── pages/              # Páginas da aplicação
-│   ├── Login.tsx
-│   ├── Callback.tsx
-│   └── Dashboard.tsx
+├── pages/              # Páginas principais
+│   ├── Login.tsx       # Autenticação OAuth
+│   ├── Callback.tsx    # Processamento do callback
+│   ├── Dashboard.tsx   # Dashboard principal
+│   ├── MusicTimeline.tsx    # Timeline musical
+│   ├── ArtistExplorer.tsx   # Explorer de artistas
+│   └── DiscoveryHub.tsx     # Hub de descoberta
+├── hooks/              # Custom hooks
+│   ├── useAuth.ts      # Gerenciamento de autenticação
+│   └── useSpotifyData.ts    # Hooks para dados do Spotify
 ├── services/           # Serviços de API
-│   └── spotifyAPI.ts
-├── styles/             # Estilos globais
+│   └── spotifyAPI.ts   # Cliente da API do Spotify
 ├── types/              # Definições TypeScript
-│   └── spotify.d.ts
-├── utils/              # Funções utilitárias
-├── App.tsx             # Componente principal
-└── main.tsx           # Ponto de entrada
+│   └── spotify.d.ts    # Tipos da API do Spotify
+├── utils/              # Utilitários
+│   └── pkce.ts        # Funções PKCE para OAuth
+└── styles/            # Estilos globais
+    └── index.css
 ```
 
-## 🔑 Principais Hooks e Serviços
+## 🔐 **Segurança e Autenticação**
 
-### useAuth()
-Hook para gerenciamento de autenticação:
-- `isAuthenticated`: Status de autenticação
-- `token`: Token de acesso atual
-- `isLoading`: Estado de carregamento
-- `login()`: Função para fazer login
-- `logout()`: Função para fazer logout
+- **OAuth 2.0 com PKCE**: Implementação segura sem Client Secret
+- **State Parameter**: Proteção contra ataques CSRF
+- **Token Expiration**: Gestão automática de expiração de tokens
+- **Secure Storage**: Armazenamento seguro de tokens no localStorage
 
-### useSpotifyData()
-Hooks para buscar dados do Spotify:
-- `useUserProfile()`: Dados do perfil do usuário
-- `useTopArtists()`: Artistas mais ouvidos
-- `useTopTracks()`: Músicas mais ouvidas
+## 🎨 **Design e UX**
 
-### spotifyService
-Serviço centralizado para API do Spotify com métodos para:
-- Buscar perfil do usuário
-- Obter top artistas e músicas
-- Analisar características de áudio
-- Gerar recomendações
-- Criar e gerenciar playlists
+- **Design System**: Cores e componentes consistentes inspirados no Spotify
+- **Responsivo**: Funciona perfeitamente em desktop, tablet e mobile
+- **Animações**: Transições suaves e efeitos visuais modernos
+- **Dark Theme**: Interface otimizada para uso prolongado
+- **Accessibility**: Componentes acessíveis com navegação por teclado
 
-## 🎨 Temas e Estilização
+## 📱 **Funcionalidades por Página**
 
-O projeto utiliza um tema baseado nas cores do Spotify:
-- **Verde principal**: `#1db954`
-- **Verde claro**: `#1ed760`
-- **Preto**: `#191414`
-- **Transparências**: Para efeitos de vidro
+### Dashboard
+- Perfil do usuário com foto e estatísticas
+- Top artists e tracks com filtros de período
+- Recently played com timestamps
+- Novos lançamentos em grid visual
 
-## 📱 Responsividade
+### Timeline Musical
+- Visualização cronológica das músicas
+- Agrupamento inteligente por data
+- Filtros temporais interativos
+- Estatísticas de listening habits
 
-A aplicação é totalmente responsiva com breakpoints:
-- **Mobile**: < 768px
-- **Tablet**: 768px - 1024px
-- **Desktop**: > 1024px
+### Explorer de Artistas
+- Busca em tempo real
+- Perfil completo do artista
+- Discografia organizada por tipo
+- Sistema de follow/unfollow
 
-## 🔒 Segurança
+### Discovery Hub
+- Busca universal multi-tipo
+- Filtros rápidos pré-configurados
+- Exploração por gêneros
+- Seção de trending e clássicos
 
-- Tokens de acesso armazenados localmente
-- Verificação automática de expiração
-- Interceptors para tratamento de erros de autenticação
-- Rotas protegidas com verificação de autenticação
-
-## 🚀 Deploy
+## 🚀 **Deploy**
 
 ### Vercel (Recomendado)
-
 1. Conecte seu repositório ao Vercel
-2. Configure as variáveis de ambiente:
-   - `VITE_CLIENT_ID`
-   - `VITE_REDIRECT_URI` (URL de produção + `/callback`)
-3. Atualize o Redirect URI no Spotify Developer Dashboard
+2. Configure as variáveis de ambiente na dashboard do Vercel
+3. O deploy automático acontecerá a cada push
 
-### Netlify
+### Outras Plataformas
+- **Netlify**: Configure redirects para SPA
+- **GitHub Pages**: Use hash routing
+- **Firebase Hosting**: Configure rewrites para client-side routing
 
-1. Build command: `npm run build`
-2. Publish directory: `dist`
-3. Configure as variáveis de ambiente
-4. Atualize o Redirect URI no Spotify Developer Dashboard
+## 🔧 **Scripts Disponíveis**
 
-## 🤝 Contribuindo
+- `npm run dev`: Servidor de desenvolvimento
+- `npm run build`: Build para produção
+- `npm run preview`: Preview do build local
+- `npm run lint`: Análise de código
+
+## 🌟 **Funcionalidades Técnicas Avançadas**
+
+- **Lazy Loading**: Carregamento otimizado de componentes
+- **Error Boundaries**: Tratamento robusto de erros
+- **Performance Optimization**: Memoização e otimizações de re-render
+- **API Rate Limiting**: Gestão inteligente de limites da API
+- **Responsive Images**: Otimização automática de imagens
+- **SEO Ready**: Meta tags e estrutura otimizada
+
+## 🤝 **Contribuição**
 
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
-## 📝 Licença
+## 📄 **Licença**
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 🙏 Agradecimentos
+## 🆘 **Suporte**
 
-- [Spotify Web API](https://developer.spotify.com/documentation/web-api/) pela API fantástica
-- [React](https://reactjs.org/) e ecossistema
-- [Styled Components](https://styled-components.com/) pela estilização
-- [Recharts](https://recharts.org/) pelos gráficos
-
-## 📞 Suporte
-
-Se você encontrar algum problema ou tiver sugestões, abra uma [issue](https://github.com/seu-usuario/spotify-genius/issues) no GitHub.
+- 📧 Email: seu-email@exemplo.com
+- 🐛 Issues: [GitHub Issues](https://github.com/seu-usuario/spotify-genius/issues)
+- 📖 Documentação: [Wiki do Projeto](https://github.com/seu-usuario/spotify-genius/wiki)
 
 ---
 
-**Desenvolvido com ❤️ e muito ☕**
+**Feito com ❤️ e muita música 🎵**
