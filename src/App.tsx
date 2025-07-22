@@ -3,6 +3,8 @@ import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
+import PlaylistAnalyzer from './pages/PlaylistAnalyzer';
+import PlaylistGenerator from './pages/PlaylistGenerator';
 import LoadingSpinner from './components/LoadingSpinner';
 import styled from 'styled-components';
 
@@ -73,6 +75,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/playlist-analyzer" 
+            element={
+              <ProtectedRoute>
+                <PlaylistAnalyzer />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/playlist-generator" 
+            element={
+              <ProtectedRoute>
+                <PlaylistGenerator />
               </ProtectedRoute>
             } 
           />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { useUserProfile, useTopArtists, useTopTracks } from '../hooks/useSpotifyData';
 import { useAuth } from '../hooks/useAuth';
+import Navigation from '../components/Navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
@@ -9,50 +10,41 @@ const DashboardContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #191414 0%, #1db954 100%);
   color: white;
-  padding: 20px;
+`;
+
+const ContentContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const Header = styled.header`
+  text-align: center;
+  margin-bottom: 3rem;
+`;
+
+const WelcomeSection = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
   margin-bottom: 2rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1rem;
-    text-align: center;
-  }
-`;
-
-const Logo = styled.h1`
-  font-size: 1.8rem;
-  font-weight: bold;
-  background: linear-gradient(45deg, #1db954, #1ed760);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-`;
-
-const UserSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.5rem;
   }
 `;
 
 const UserAvatar = styled.img`
-  width: 50px;
-  height: 50px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  border: 2px solid #1db954;
+  border: 3px solid #1db954;
 `;
 
 const UserInfo = styled.div`
@@ -63,35 +55,23 @@ const UserInfo = styled.div`
   }
 `;
 
-const UserName = styled.h3`
-  margin: 0;
-  font-size: 1.1rem;
+const WelcomeText = styled.h1`
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(45deg, #1db954, #1ed760);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
 `;
 
 const UserStats = styled.p`
   margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.7;
-`;
-
-const LogoutButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
-
-const MainContent = styled.main`
-  max-width: 1200px;
-  margin: 0 auto;
+  font-size: 1rem;
+  opacity: 0.8;
 `;
 
 const TimeRangeSelector = styled.div`
@@ -213,17 +193,11 @@ const ItemRank = styled.div`
 `;
 
 const Dashboard = () => {
-  const { logout } = useAuth();
   const [timeRange, setTimeRange] = useState<'short_term' | 'medium_term' | 'long_term'>('medium_term');
 
   const { data: profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useUserProfile();
   const { data: topArtists, loading: artistsLoading, error: artistsError, refetch: refetchArtists } = useTopArtists(timeRange, 10);
   const { data: topTracks, loading: tracksLoading, error: tracksError, refetch: refetchTracks } = useTopTracks(timeRange, 10);
-
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/';
-  };
 
   const getTimeRangeLabel = (range: string) => {
     switch (range) {
@@ -237,7 +211,10 @@ const Dashboard = () => {
   if (profileLoading) {
     return (
       <DashboardContainer>
-        <LoadingSpinner size="large" text="Carregando seu perfil..." />
+        <Navigation />
+        <ContentContainer>
+          <LoadingSpinner size="large" text="Carregando seu perfil..." />
+        </ContentContainer>
       </DashboardContainer>
     );
   }
@@ -245,37 +222,36 @@ const Dashboard = () => {
   if (profileError) {
     return (
       <DashboardContainer>
-        <ErrorMessage 
-          title="Erro ao carregar perfil"
-          message={profileError}
-          onRetry={refetchProfile}
-        />
+        <Navigation />
+        <ContentContainer>
+          <ErrorMessage 
+            title="Erro ao carregar perfil"
+            message={profileError}
+            onRetry={refetchProfile}
+          />
+        </ContentContainer>
       </DashboardContainer>
     );
   }
 
   return (
     <DashboardContainer>
-      <Header>
-        <Logo>Spotify Genius</Logo>
-        {profile && (
-          <UserSection>
-            <UserAvatar 
-              src={profile.images[0]?.url || '/default-avatar.png'} 
-              alt={profile.display_name}
-            />
-            <UserInfo>
-              <UserName>{profile.display_name}</UserName>
-              <UserStats>{profile.followers.total} seguidores</UserStats>
-            </UserInfo>
-            <LogoutButton onClick={handleLogout}>
-              Sair
-            </LogoutButton>
-          </UserSection>
-        )}
-      </Header>
-
-      <MainContent>
+      <Navigation />
+      <ContentContainer>
+        <Header>
+          {profile && (
+            <WelcomeSection>
+              <UserAvatar 
+                src={profile.images[0]?.url || '/default-avatar.png'} 
+                alt={profile.display_name}
+              />
+              <UserInfo>
+                <WelcomeText>Olá, {profile.display_name}! 👋</WelcomeText>
+                <UserStats>{profile.followers.total} seguidores • {profile.country}</UserStats>
+              </UserInfo>
+            </WelcomeSection>
+          )}
+        </Header>
         <TimeRangeSelector>
           {(['short_term', 'medium_term', 'long_term'] as const).map((range) => (
             <TimeRangeButton
@@ -356,10 +332,10 @@ const Dashboard = () => {
               </ItemList>
             )}
           </StatsCard>
-        </StatsGrid>
-      </MainContent>
-    </DashboardContainer>
-  );
-};
+                  </StatsGrid>
+        </ContentContainer>
+      </DashboardContainer>
+    );
+  };
 
 export default Dashboard; 
