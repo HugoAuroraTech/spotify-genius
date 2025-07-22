@@ -45,6 +45,36 @@ spotifyAPI.interceptors.response.use(
   }
 );
 
+// Função para trocar authorization code por access token
+export const exchangeCodeForToken = async (
+  code: string,
+  codeVerifier: string,
+  redirectUri: string
+): Promise<{ access_token: string; expires_in: number; refresh_token?: string }> => {
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+      client_id: clientId,
+      code_verifier: codeVerifier,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Token exchange failed: ${error.error_description || error.error}`);
+  }
+
+  return response.json();
+};
+
 // Serviços da API
 export const spotifyService = {
   // Perfil do usuário

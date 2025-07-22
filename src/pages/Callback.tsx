@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
+import { getPKCEParams, clearPKCEParams } from '../utils/pkce';
+import { exchangeCodeForToken } from '../services/spotifyAPI';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }
@@ -66,14 +68,14 @@ const Callback = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
-    const processAuthCallback = () => {
+    const processAuthCallback = async () => {
       try {
-        const hash = window.location.hash;
-        
-        // Verifica se há erro na URL
-        const urlParams = new URLSearchParams(hash.substring(1));
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
         const error = urlParams.get('error');
         
+        // Verifica se há erro na URL
         if (error) {
           setStatus('error');
           setErrorMessage(
@@ -81,61 +83,76 @@ const Callback = () => {
               ? 'Acesso negado. Você precisa autorizar o aplicativo para continuar.'
               : 'Erro durante a autenticação. Tente novamente.'
           );
+          clearPKCEParams();
           return;
         }
 
         // Verifica se já tem token no localStorage
-        let token = window.localStorage.getItem("spotify_token");
-
-        // Se não tem token e há hash na URL, extrai o token
-        if (!token && hash) {
-          const tokenMatch = hash.substring(1)
-            .split("&")
-            .find(elem => elem.startsWith("access_token"));
-
-          if (tokenMatch) {
-            token = tokenMatch.split("=")[1];
-            
-            // Também extrai o tempo de expiração se disponível
-            const expiresInMatch = hash.substring(1)
-              .split("&")
-              .find(elem => elem.startsWith("expires_in"));
-            
-            if (expiresInMatch) {
-              const expiresIn = parseInt(expiresInMatch.split("=")[1]);
-              const expirationTime = new Date().getTime() + (expiresIn * 1000);
-              window.localStorage.setItem("spotify_token_expires", expirationTime.toString());
-            }
-
-            // Salva o token
-            window.localStorage.setItem("spotify_token", token);
-            
-            // Limpa o hash da URL
-            window.location.hash = "";
-            
-            setStatus('success');
-            
-            // Redireciona após um pequeno delay para mostrar o sucesso
-            setTimeout(() => {
-              navigate("/dashboard");
-            }, 1500);
-          } else {
-            setStatus('error');
-            setErrorMessage('Token de acesso não encontrado na resposta do Spotify.');
-          }
-        } else if (token) {
-          // Se já tem token, redireciona diretamente
+        const existingToken = window.localStorage.getItem("spotify_token");
+        if (existingToken) {
           setStatus('success');
           navigate("/dashboard");
+          return;
+        }
+
+        // Processa o authorization code
+        if (code) {
+          const { codeVerifier, state: storedState } = getPKCEParams();
+          
+          // Verifica o state para proteção CSRF
+          if (!state || !storedState || state !== storedState) {
+            setStatus('error');
+            setErrorMessage('Erro de validação de segurança. Tente fazer login novamente.');
+            clearPKCEParams();
+            return;
+          }
+
+          if (!codeVerifier) {
+            setStatus('error');
+            setErrorMessage('Parâmetros de autenticação não encontrados. Tente fazer login novamente.');
+            clearPKCEParams();
+            return;
+          }
+
+          // Troca o código pelo token
+          const redirectUri = import.meta.env.VITE_REDIRECT_URI;
+          const tokenData = await exchangeCodeForToken(code, codeVerifier, redirectUri);
+          
+          // Salva o token
+          window.localStorage.setItem("spotify_token", tokenData.access_token);
+          
+          if (tokenData.expires_in) {
+            const expirationTime = new Date().getTime() + (tokenData.expires_in * 1000);
+            window.localStorage.setItem("spotify_token_expires", expirationTime.toString());
+          }
+
+          if (tokenData.refresh_token) {
+            window.localStorage.setItem("spotify_refresh_token", tokenData.refresh_token);
+          }
+          
+          // Limpa os parâmetros PKCE
+          clearPKCEParams();
+          
+          setStatus('success');
+          
+          // Redireciona após um pequeno delay para mostrar o sucesso
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1500);
         } else {
           setStatus('error');
-          setErrorMessage('Nenhum token de autenticação encontrado.');
+          setErrorMessage('Código de autorização não encontrado na resposta do Spotify.');
         }
         
       } catch (error) {
         console.error('Erro ao processar callback de autenticação:', error);
         setStatus('error');
-        setErrorMessage('Erro inesperado durante a autenticação.');
+        setErrorMessage(
+          error instanceof Error 
+            ? `Erro na autenticação: ${error.message}`
+            : 'Erro inesperado durante a autenticação.'
+        );
+        clearPKCEParams();
       }
     };
 

@@ -1,9 +1,9 @@
 import styled from 'styled-components';
+import { generateCodeVerifier, generateCodeChallenge, generateState, storePKCEParams } from '../utils/pkce';
 
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI;
 const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
-const RESPONSE_TYPE = "token";
 
 // Escopos necessários para as funcionalidades da aplicação
 const SCOPES = [
@@ -15,8 +15,6 @@ const SCOPES = [
   "playlist-modify-private",
   "user-follow-read"
 ];
-
-const loginUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=${SCOPES.join("%20")}&response_type=${RESPONSE_TYPE}&show_dialog=true`;
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -123,15 +121,39 @@ const FeatureDescription = styled.p`
 `;
 
 const Login = () => {
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // Verifica se as variáveis de ambiente estão configuradas
     if (!CLIENT_ID || CLIENT_ID === 'your_spotify_client_id_here') {
       alert('Por favor, configure suas credenciais do Spotify no arquivo .env.local');
       return;
     }
     
-    // Redireciona para o Spotify
-    window.location.href = loginUrl;
+    try {
+      // Gera parâmetros PKCE
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      const state = generateState();
+      
+      // Armazena no sessionStorage para uso no callback
+      storePKCEParams(codeVerifier, state);
+      
+      // Constrói URL de autorização com PKCE
+      const authUrl = new URL(AUTH_ENDPOINT);
+      authUrl.searchParams.append('client_id', CLIENT_ID);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.append('scope', SCOPES.join(' '));
+      authUrl.searchParams.append('code_challenge_method', 'S256');
+      authUrl.searchParams.append('code_challenge', codeChallenge);
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('show_dialog', 'true');
+      
+      // Redireciona para o Spotify
+      window.location.href = authUrl.toString();
+    } catch (error) {
+      console.error('Erro ao gerar parâmetros PKCE:', error);
+      alert('Erro ao iniciar autenticação. Tente novamente.');
+    }
   };
 
   return (
@@ -142,7 +164,7 @@ const Login = () => {
         baseadas nos seus gostos e características de áudio das suas músicas favoritas.
       </Subtitle>
       
-      <LoginButton href={loginUrl} onClick={(e) => {
+      <LoginButton href="#" onClick={(e) => {
         e.preventDefault();
         handleLogin();
       }}>
