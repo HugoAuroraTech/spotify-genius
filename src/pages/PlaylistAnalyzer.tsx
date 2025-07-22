@@ -173,6 +173,7 @@ const PlaylistAnalyzer = () => {
   const [audioFeatures, setAudioFeatures] = useState<AudioFeatures[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Buscar playlists do usuário
   const { data: allPlaylists, loading: playlistsLoading, error: playlistsError } = useSpotifyQuery(
@@ -200,6 +201,7 @@ const PlaylistAnalyzer = () => {
 
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setAnalysisProgress(null);
 
     try {
       // Verificar se a playlist tem faixas
@@ -235,17 +237,32 @@ const PlaylistAnalyzer = () => {
         throw new Error('Nenhuma faixa válida encontrada na playlist ou playlist contém apenas faixas locais');
       }
 
-      // Buscar características de áudio em lotes para evitar rate limiting
-      const batchSize = 50; // Spotify permite até 100, mas vamos ser conservadores
-      const audioFeaturesPromises: Promise<any[]>[] = [];
+      // Buscar características de áudio em lotes pequenos para evitar rate limiting
+      const batchSize = 10; // Lotes pequenos para evitar problemas
+      const allFeatures: any[] = [];
+      setAnalysisProgress({ current: 0, total: trackIds.length });
 
       for (let i = 0; i < trackIds.length; i += batchSize) {
         const batch = trackIds.slice(i, i + batchSize);
-        audioFeaturesPromises.push(spotifyService.getAudioFeatures(batch));
-      }
+        
+        try {
+          // Pequeno delay entre lotes para evitar rate limiting
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
 
-      const audioFeaturesBatches = await Promise.all(audioFeaturesPromises);
-      const allFeatures = audioFeaturesBatches.flat().filter(feature => feature !== null);
+          const batchFeatures = await spotifyService.getAudioFeatures(batch);
+          allFeatures.push(...batchFeatures);
+
+          // Atualizar progresso
+          const processed = Math.min(i + batchSize, trackIds.length);
+          setAnalysisProgress({ current: processed, total: trackIds.length });
+          console.log(`Processado ${processed} de ${trackIds.length} faixas`);
+        } catch (error) {
+          console.warn(`Erro ao processar lote ${i / batchSize + 1}:`, error);
+          // Continuar mesmo se um lote falhar
+        }
+      }
 
       if (allFeatures.length === 0) {
         throw new Error('Não foi possível analisar as características de áudio das faixas desta playlist');
@@ -272,6 +289,7 @@ const PlaylistAnalyzer = () => {
       setAnalysisError(errorMessage);
     } finally {
       setIsAnalyzing(false);
+      setAnalysisProgress(null);
     }
   };
 
@@ -401,7 +419,30 @@ const PlaylistAnalyzer = () => {
         {selectedPlaylist && (
           <>
             {isAnalyzing ? (
-              <LoadingSpinner size="large" text="Analisando playlist..." />
+              <div style={{ textAlign: 'center' }}>
+                <LoadingSpinner size="large" text={
+                  analysisProgress 
+                    ? `Analisando playlist... ${analysisProgress.current}/${analysisProgress.total} faixas`
+                    : "Analisando playlist..."
+                } />
+                {analysisProgress && (
+                  <div style={{ 
+                    width: '300px', 
+                    height: '6px', 
+                    background: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '3px', 
+                    margin: '1rem auto',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${(analysisProgress.current / analysisProgress.total) * 100}%`,
+                      height: '100%',
+                      background: '#1db954',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                )}
+              </div>
             ) : analysisError ? (
               <ErrorMessage 
                 message={analysisError} 

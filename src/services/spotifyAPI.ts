@@ -123,14 +123,38 @@ export const spotifyService = {
     }
     
     try {
-      const ids = trackIds.join(',');
-      const response = await spotifyAPI.get<{ audio_features: AudioFeatures[] }>(`/audio-features?ids=${ids}`);
-      return response.data.audio_features.filter(feature => feature !== null);
+      // Fazer requisições individuais para evitar problemas com muitos IDs
+      const audioFeaturesPromises = trackIds.map(async (trackId) => {
+        try {
+          const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
+          return response.data;
+        } catch (error: any) {
+          console.warn(`Erro ao buscar características da faixa ${trackId}:`, error);
+          return null; // Retorna null se a faixa não puder ser analisada
+        }
+      });
+
+      // Esperar todas as requisições terminarem
+      const results = await Promise.all(audioFeaturesPromises);
+      
+      // Filtrar resultados válidos
+      return results.filter((feature): feature is AudioFeatures => feature !== null);
     } catch (error: any) {
       if (error.response?.status === 403) {
         throw new Error('Acesso negado às características de áudio das faixas.');
       }
       throw error;
+    }
+  },
+
+  // Características de áudio de uma única faixa
+  async getSingleAudioFeatures(trackId: string): Promise<AudioFeatures | null> {
+    try {
+      const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
+      return response.data;
+    } catch (error: any) {
+      console.warn(`Erro ao buscar características da faixa ${trackId}:`, error);
+      return null;
     }
   },
 
