@@ -1,21 +1,16 @@
 import axios from 'axios';
 import type { 
   UserProfile, 
-  Artist, 
   Track, 
+  Artist, 
+  Album, 
   Playlist, 
-  AudioFeatures, 
-  Recommendations, 
-  RecommendationSeed,
-  SpotifyApiResponse,
-  CreatePlaylistRequest,
-  AddTracksToPlaylistRequest
+  SpotifyApiResponse 
 } from '../types/spotify';
 
 // Configuração base da API
 const spotifyAPI = axios.create({
   baseURL: 'https://api.spotify.com/v1',
-  timeout: 10000,
 });
 
 // Interceptor para adicionar token de autorização automaticamente
@@ -39,15 +34,16 @@ spotifyAPI.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expirado ou inválido
+      // Token expirado - redirecionar para login
       window.localStorage.removeItem('spotify_token');
-      window.location.href = '/';
+      window.localStorage.removeItem('spotify_token_expires');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-// Função para trocar authorization code por access token
+// Exchange authorization code for access token (PKCE)
 export const exchangeCodeForToken = async (
   code: string,
   codeVerifier: string,
@@ -77,7 +73,7 @@ export const exchangeCodeForToken = async (
   return response.json();
 };
 
-// Serviços da API
+// Serviços da API do Spotify
 export const spotifyService = {
   // Perfil do usuário
   async getUserProfile(): Promise<UserProfile> {
@@ -85,25 +81,108 @@ export const spotifyService = {
     return response.data;
   },
 
-  // Top artistas
-  async getTopArtists(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit: number = 20): Promise<Artist[]> {
-    const response = await spotifyAPI.get<SpotifyApiResponse<Artist>>(`/me/top/artists?time_range=${timeRange}&limit=${limit}`);
-    return response.data.items;
-  },
-
-  // Top faixas
+  // Top tracks do usuário
   async getTopTracks(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit: number = 20): Promise<Track[]> {
     const response = await spotifyAPI.get<SpotifyApiResponse<Track>>(`/me/top/tracks?time_range=${timeRange}&limit=${limit}`);
     return response.data.items;
   },
 
+  // Top artists do usuário
+  async getTopArtists(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term', limit: number = 20): Promise<Artist[]> {
+    const response = await spotifyAPI.get<SpotifyApiResponse<Artist>>(`/me/top/artists?time_range=${timeRange}&limit=${limit}`);
+    return response.data.items;
+  },
+
+  // Recently played tracks
+  async getRecentlyPlayed(limit: number = 50): Promise<{ track: Track; played_at: string; context?: any }[]> {
+    const response = await spotifyAPI.get(`/me/player/recently-played?limit=${limit}`);
+    return response.data.items;
+  },
+
+  // Saved tracks
+  async getSavedTracks(limit: number = 50, offset: number = 0): Promise<{ track: Track; added_at: string }[]> {
+    const response = await spotifyAPI.get(`/me/tracks?limit=${limit}&offset=${offset}`);
+    return response.data.items;
+  },
+
+  // Saved albums
+  async getSavedAlbums(limit: number = 50, offset: number = 0): Promise<{ album: Album; added_at: string }[]> {
+    const response = await spotifyAPI.get(`/me/albums?limit=${limit}&offset=${offset}`);
+    return response.data.items;
+  },
+
+  // Buscar conteúdo
+  async search(query: string, type: 'track' | 'artist' | 'album' | 'playlist', limit: number = 20): Promise<any> {
+    const response = await spotifyAPI.get(`/search?q=${encodeURIComponent(query)}&type=${type}&limit=${limit}`);
+    return response.data;
+  },
+
+  // Busca avançada com múltiplos tipos
+  async searchAll(query: string, limit: number = 10): Promise<{
+    tracks: Track[];
+    artists: Artist[];
+    albums: Album[];
+    playlists: Playlist[];
+  }> {
+    const response = await spotifyAPI.get(`/search?q=${encodeURIComponent(query)}&type=track,artist,album,playlist&limit=${limit}`);
+    return {
+      tracks: response.data.tracks?.items || [],
+      artists: response.data.artists?.items || [],
+      albums: response.data.albums?.items || [],
+      playlists: response.data.playlists?.items || [],
+    };
+  },
+
+  // Detalhes de um artista
+  async getArtist(artistId: string): Promise<Artist> {
+    const response = await spotifyAPI.get<Artist>(`/artists/${artistId}`);
+    return response.data;
+  },
+
+  // Top tracks de um artista
+  async getArtistTopTracks(artistId: string, market: string = 'BR'): Promise<Track[]> {
+    const response = await spotifyAPI.get(`/artists/${artistId}/top-tracks?market=${market}`);
+    return response.data.tracks;
+  },
+
+  // Albums de um artista
+  async getArtistAlbums(artistId: string, includeGroups: string = 'album,single', limit: number = 50): Promise<Album[]> {
+    const response = await spotifyAPI.get(`/artists/${artistId}/albums?include_groups=${includeGroups}&limit=${limit}&market=BR`);
+    return response.data.items;
+  },
+
+  // Múltiplos artistas
+  async getArtists(artistIds: string[]): Promise<Artist[]> {
+    const ids = artistIds.join(',');
+    const response = await spotifyAPI.get(`/artists?ids=${ids}`);
+    return response.data.artists;
+  },
+
+  // Detalhes de um album
+  async getAlbum(albumId: string): Promise<Album> {
+    const response = await spotifyAPI.get<Album>(`/albums/${albumId}`);
+    return response.data;
+  },
+
+  // Tracks de um album
+  async getAlbumTracks(albumId: string, limit: number = 50): Promise<Track[]> {
+    const response = await spotifyAPI.get(`/albums/${albumId}/tracks?limit=${limit}`);
+    return response.data.items;
+  },
+
+  // New releases
+  async getNewReleases(limit: number = 20, country: string = 'BR'): Promise<Album[]> {
+    const response = await spotifyAPI.get(`/browse/new-releases?limit=${limit}&country=${country}`);
+    return response.data.albums.items;
+  },
+
   // Playlists do usuário
-  async getUserPlaylists(limit: number = 20): Promise<Playlist[]> {
+  async getUserPlaylists(limit: number = 50): Promise<Playlist[]> {
     const response = await spotifyAPI.get<SpotifyApiResponse<Playlist>>(`/me/playlists?limit=${limit}`);
     return response.data.items;
   },
 
-  // Buscar playlist específica
+  // Detalhes de uma playlist
   async getPlaylist(playlistId: string): Promise<Playlist> {
     try {
       const response = await spotifyAPI.get<Playlist>(`/playlists/${playlistId}`);
@@ -118,142 +197,60 @@ export const spotifyService = {
     }
   },
 
-  // Características de áudio de múltiplas faixas - usando o endpoint correto com ?ids=
-  async getAudioFeatures(trackIds: string[]): Promise<AudioFeatures[]> {
-    if (trackIds.length === 0) {
-      return [];
-    }
-
-    try {
-      console.log(`🎵 Iniciando busca de características para ${trackIds.length} faixas`);
-      
-      // Verificar se há token válido
-      const token = window.localStorage.getItem('spotify_token');
-      if (!token) {
-        throw new Error('Token de acesso não encontrado. Faça login novamente.');
-      }
-
-      // Filtrar IDs válidos (remover nulls, undefined, strings vazias)
-      const validTrackIds = trackIds.filter(id => id && typeof id === 'string' && id.trim().length > 0);
-      
-      if (validTrackIds.length === 0) {
-        console.warn('Nenhum ID de faixa válido encontrado');
-        return [];
-      }
-
-      // A API do Spotify permite até 100 faixas por requisição
-      const BATCH_SIZE = 100;
-      const allAudioFeatures: AudioFeatures[] = [];
-
-      // Processar em lotes de 100 faixas
-      for (let i = 0; i < validTrackIds.length; i += BATCH_SIZE) {
-        const batch = validTrackIds.slice(i, i + BATCH_SIZE);
-        console.log(`📦 Lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(validTrackIds.length / BATCH_SIZE)}: ${batch.length} faixas`);
-        
-        try {
-          // Usar o endpoint correto com query parameter ?ids=
-          const idsParam = batch.join(',');
-          const response = await spotifyAPI.get<{ audio_features: (AudioFeatures | null)[] }>(`/audio-features?ids=${encodeURIComponent(idsParam)}`);
-          
-          // Filtrar resultados válidos (a API pode retornar null para faixas não encontradas)
-          const validFeatures = response.data.audio_features.filter((feature): feature is AudioFeatures => feature !== null);
-          
-          allAudioFeatures.push(...validFeatures);
-          console.log(`✅ ${validFeatures.length}/${batch.length} faixas processadas`);
-          
-          // Delay entre lotes para evitar rate limiting
-          if (i + BATCH_SIZE < validTrackIds.length) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-          
-        } catch (error: any) {
-          console.error(`❌ Erro no lote ${Math.floor(i / BATCH_SIZE) + 1}:`, {
-            status: error.response?.status,
-            message: error.response?.data?.error?.message || error.message,
-            batchSize: batch.length
-          });
-          
-          // Se o lote falhar, continuar com o próximo
-          continue;
-        }
-      }
-      
-      console.log(`🎉 Análise concluída: ${allAudioFeatures.length}/${validTrackIds.length} faixas analisadas com sucesso`);
-      return allAudioFeatures;
-      
-    } catch (error: any) {
-      console.error('❌ Erro geral na busca de características:', error);
-      
-      if (error.response?.status === 403) {
-        throw new Error('Acesso negado às características de áudio das faixas. Verifique se você tem as permissões necessárias.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Token expirado. Faça login novamente.');
-      } else if (error.response?.status === 429) {
-        throw new Error('Muitas requisições. Aguarde um momento e tente novamente.');
-      }
-      
-      throw error;
-    }
-  },
-
-  // Características de áudio de uma única faixa - usar getAudioFeatures([trackId]) em vez disso
-  async getSingleAudioFeatures(trackId: string): Promise<AudioFeatures | null> {
-    try {
-      const result = await this.getAudioFeatures([trackId]);
-      return result.length > 0 ? result[0] : null;
-    } catch (error) {
-      console.error(`Erro ao buscar características da faixa ${trackId}:`, error);
-      return null;
-    }
-  },
-
-  // Recomendações
-  async getRecommendations(params: RecommendationSeed): Promise<Recommendations> {
-    const queryParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (Array.isArray(value)) {
-          queryParams.append(key, value.join(','));
-        } else {
-          queryParams.append(key, value.toString());
-        }
-      }
-    });
-
-    const response = await spotifyAPI.get<Recommendations>(`/recommendations?${queryParams.toString()}`);
-    return response.data;
-  },
-
-  // Gêneros disponíveis para recomendação
-  async getAvailableGenres(): Promise<string[]> {
-    const response = await spotifyAPI.get<{ genres: string[] }>('/recommendations/available-genre-seeds');
-    return response.data.genres;
-  },
-
-  // Buscar artistas, faixas, etc.
-  async search(query: string, type: 'artist' | 'track' | 'album' | 'playlist', limit: number = 20): Promise<any> {
-    const response = await spotifyAPI.get(`/search?q=${encodeURIComponent(query)}&type=${type}&limit=${limit}`);
-    return response.data[`${type}s`].items;
-  },
-
   // Criar nova playlist
-  async createPlaylist(userId: string, playlistData: CreatePlaylistRequest): Promise<Playlist> {
-    const response = await spotifyAPI.post<Playlist>(`/users/${userId}/playlists`, playlistData);
+  async createPlaylist(userId: string, name: string, description: string = '', isPublic: boolean = false): Promise<Playlist> {
+    const response = await spotifyAPI.post(`/users/${userId}/playlists`, {
+      name,
+      description,
+      public: isPublic
+    });
     return response.data;
   },
 
-  // Adicionar faixas à playlist
-  async addTracksToPlaylist(playlistId: string, tracksData: AddTracksToPlaylistRequest): Promise<void> {
-    await spotifyAPI.post(`/playlists/${playlistId}/tracks`, tracksData);
+  // Adicionar tracks a uma playlist
+  async addTracksToPlaylist(playlistId: string, trackUris: string[]): Promise<{ snapshot_id: string }> {
+    const response = await spotifyAPI.post(`/playlists/${playlistId}/tracks`, {
+      uris: trackUris
+    });
+    return response.data;
   },
 
-  // Verificar se o usuário segue artistas
+  // Available genre seeds (ainda funciona)
+  async getAvailableGenreSeeds(): Promise<string[]> {
+    try {
+      const response = await spotifyAPI.get('/recommendations/available-genre-seeds');
+      return response.data.genres;
+    } catch (error) {
+      // Fallback com gêneros conhecidos se a API falhar
+      return [
+        'acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
+        'blues', 'bossa-nova', 'brazil', 'breakbeat', 'british',
+        'chill', 'classical', 'country', 'dance', 'deep-house',
+        'disco', 'drum-and-bass', 'dub', 'dubstep', 'edm',
+        'electronic', 'folk', 'funk', 'garage', 'gospel',
+        'groove', 'grunge', 'hip-hop', 'house', 'indie',
+        'jazz', 'latin', 'metal', 'pop', 'punk',
+        'r-n-b', 'reggae', 'rock', 'soul', 'techno'
+      ];
+    }
+  },
+
+  // Verificar se user segue artistas
   async checkFollowingArtists(artistIds: string[]): Promise<boolean[]> {
     const ids = artistIds.join(',');
-    const response = await spotifyAPI.get<boolean[]>(`/me/following/contains?type=artist&ids=${ids}`);
+    const response = await spotifyAPI.get(`/me/following/contains?type=artist&ids=${ids}`);
     return response.data;
-  }
+  },
+
+  // Seguir artista
+  async followArtist(artistId: string): Promise<void> {
+    await spotifyAPI.put(`/me/following?type=artist&ids=${artistId}`);
+  },
+
+  // Parar de seguir artista
+  async unfollowArtist(artistId: string): Promise<void> {
+    await spotifyAPI.delete(`/me/following?type=artist&ids=${artistId}`);
+  },
 };
 
-export default spotifyAPI; 
+export default spotifyService; 

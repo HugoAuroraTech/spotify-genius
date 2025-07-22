@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import { useUserProfile, useTopArtists, useTopTracks } from '../hooks/useSpotifyData';
+import { useUserProfile, useTopArtists, useTopTracks, useSpotifyQuery } from '../hooks/useSpotifyData';
+import spotifyService from '../services/spotifyAPI';
 import Navigation from '../components/Navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
@@ -191,6 +192,88 @@ const ItemRank = styled.div`
   font-weight: bold;
 `;
 
+// Componente para Recently Played
+const RecentlyPlayedCard = () => {
+  const { data: recentlyPlayed, loading, error } = useSpotifyQuery(
+    () => spotifyService.getRecentlyPlayed(10),
+    []
+  );
+
+  return (
+    <StatsCard>
+      <CardTitle>🕒 Tocadas Recentemente</CardTitle>
+      {loading ? (
+        <LoadingSpinner size="small" text="Carregando histórico..." />
+      ) : error ? (
+        <ErrorMessage message={error} showIcon={false} />
+      ) : (
+        <ItemList>
+          {recentlyPlayed?.slice(0, 5).map((item, index) => (
+            <ListItem key={`${item.track.id}-${item.played_at}`}>
+              <ItemRank>{index + 1}</ItemRank>
+              <ItemImage 
+                src={item.track.album.images[0]?.url || '/default-track.png'} 
+                alt={item.track.name}
+              />
+              <ItemInfo>
+                <ItemName>{item.track.name}</ItemName>
+                <ItemDetails>
+                  {item.track.artists.map(artist => artist.name).join(', ')}
+                </ItemDetails>
+              </ItemInfo>
+            </ListItem>
+          ))}
+        </ItemList>
+      )}
+    </StatsCard>
+  );
+};
+
+// Componente para descoberta rápida
+const QuickDiscovery = () => {
+  const { data: newReleases, loading } = useSpotifyQuery(
+    () => spotifyService.getNewReleases(6),
+    []
+  );
+
+  return (
+    <StatsCard>
+      <CardTitle>🆕 Novos Lançamentos</CardTitle>
+      {loading ? (
+        <LoadingSpinner size="small" text="Carregando lançamentos..." />
+      ) : (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', 
+          gap: '1rem',
+          marginTop: '1rem'
+        }}>
+          {newReleases?.slice(0, 6).map((album) => (
+            <div key={album.id} style={{ textAlign: 'center' }}>
+              <img 
+                src={album.images[0]?.url || '/default-album.png'} 
+                alt={album.name}
+                style={{ 
+                  width: '100%', 
+                  aspectRatio: '1',
+                  borderRadius: '8px',
+                  marginBottom: '0.5rem'
+                }}
+              />
+              <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+                {album.name.length > 15 ? `${album.name.substring(0, 15)}...` : album.name}
+              </div>
+              <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                {album.artists[0]?.name}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </StatsCard>
+  );
+};
+
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState<'short_term' | 'medium_term' | 'long_term'>('medium_term');
 
@@ -331,10 +414,16 @@ const Dashboard = () => {
               </ItemList>
             )}
           </StatsCard>
-                  </StatsGrid>
-        </ContentContainer>
-      </DashboardContainer>
-    );
-  };
+
+          {/* Recently Played */}
+          <RecentlyPlayedCard />
+
+          {/* Music Discovery */}
+          <QuickDiscovery />
+        </StatsGrid>
+      </ContentContainer>
+    </DashboardContainer>
+  );
+};
 
 export default Dashboard; 

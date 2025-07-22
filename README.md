@@ -1,6 +1,8 @@
 # 🎵 Spotify Stats & Playlist Genius
 
-Uma aplicação web interativa que permite aos usuários visualizar suas estatísticas musicais do Spotify e gerar playlists inteligentes baseadas em características de áudio.
+⚠️ **AVISO**: Devido a mudanças na API do Spotify (Nov 2024), algumas funcionalidades estão temporariamente indisponíveis. [Leia mais](./SPOTIFY_API_DEPRECATION_NOTICE.md)
+
+Uma aplicação web interativa que permite aos usuários visualizar suas estatísticas musicais do Spotify. **Funcionalidades de análise de playlists estão temporariamente indisponíveis devido a limitações da API.**
 
 ![Spotify Genius Preview](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)

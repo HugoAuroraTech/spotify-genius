@@ -3,8 +3,9 @@ import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
-import PlaylistAnalyzer from './pages/PlaylistAnalyzer';
-import PlaylistGenerator from './pages/PlaylistGenerator';
+import MusicTimeline from './pages/MusicTimeline';
+import ArtistExplorer from './pages/ArtistExplorer';
+import DiscoveryHub from './pages/DiscoveryHub';
 import LoadingSpinner from './components/LoadingSpinner';
 import styled from 'styled-components';
 
@@ -80,19 +81,28 @@ function App() {
           />
           
           <Route 
-            path="/playlist-analyzer" 
+            path="/music-timeline" 
             element={
               <ProtectedRoute>
-                <PlaylistAnalyzer />
+                <MusicTimeline />
               </ProtectedRoute>
             } 
           />
           
           <Route 
-            path="/playlist-generator" 
+            path="/artist-explorer" 
             element={
               <ProtectedRoute>
-                <PlaylistGenerator />
+                <ArtistExplorer />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/discovery-hub" 
+            element={
+              <ProtectedRoute>
+                <DiscoveryHub />
               </ProtectedRoute>
             } 
           />

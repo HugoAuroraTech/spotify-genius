@@ -51,6 +51,11 @@ export interface Album {
   images: SpotifyImage[];
   release_date: string;
   artists: Artist[];
+  total_tracks?: number;
+  album_type?: string;
+  tracks?: {
+    items: Track[];
+  };
 }
 
 export interface Playlist {
@@ -78,54 +83,29 @@ export interface PlaylistTrack {
   added_at: string;
 }
 
-export interface AudioFeatures {
-  id: string;
-  danceability: number;
-  energy: number;
-  key: number;
-  loudness: number;
-  mode: number;
-  speechiness: number;
-  acousticness: number;
-  instrumentalness: number;
-  liveness: number;
-  valence: number;
-  tempo: number;
-  duration_ms: number;
-  time_signature: number;
-  analysis_url?: string;
-  track_href?: string;
-  type?: 'audio_features';
-  uri?: string;
-}
-
-export interface AudioFeaturesResponse {
-  audio_features: (AudioFeatures | null)[];
-}
-
-export interface RecommendationSeed {
-  seed_artists?: string[];
-  seed_tracks?: string[];
-  seed_genres?: string[];
-  target_acousticness?: number;
-  target_danceability?: number;
-  target_energy?: number;
-  target_instrumentalness?: number;
-  target_liveness?: number;
-  target_loudness?: number;
-  target_popularity?: number;
-  target_speechiness?: number;
-  target_tempo?: number;
-  target_valence?: number;
-  limit?: number;
-}
-
-export interface Recommendations {
-  tracks: Track[];
-  seeds: Array<{
+// Tipos para recently played
+export interface RecentlyPlayedItem {
+  track: Track;
+  played_at: string;
+  context?: {
     type: string;
-    id: string;
-  }>;
+    href: string;
+    external_urls: {
+      spotify: string;
+    };
+    uri: string;
+  };
+}
+
+// Tipos para saved items
+export interface SavedTrack {
+  track: Track;
+  added_at: string;
+}
+
+export interface SavedAlbum {
+  album: Album;
+  added_at: string;
 }
 
 // Tipos para resposta da API
@@ -138,15 +118,39 @@ export interface SpotifyApiResponse<T> {
   previous: string | null;
 }
 
-// Tipos para criação de playlist
-export interface CreatePlaylistRequest {
-  name: string;
-  description?: string;
-  public?: boolean;
-  collaborative?: boolean;
+// Tipos para busca
+export interface SearchResults {
+  tracks?: {
+    items: Track[];
+    total: number;
+  };
+  artists?: {
+    items: Artist[];
+    total: number;
+  };
+  albums?: {
+    items: Album[];
+    total: number;
+  };
+  playlists?: {
+    items: Playlist[];
+    total: number;
+  };
 }
 
-export interface AddTracksToPlaylistRequest {
-  uris: string[];
-  position?: number;
+// Tipos para new releases
+export interface NewReleasesResponse {
+  albums: {
+    items: Album[];
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+// Tipos úteis para a aplicação
+export interface TimeRange {
+  value: 'short_term' | 'medium_term' | 'long_term';
+  label: string;
+  description: string;
 } 

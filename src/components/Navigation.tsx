@@ -147,19 +147,25 @@ const Navigation = () => {
             active={isActive('/dashboard')} 
             onClick={() => navigateTo('/dashboard')}
           >
-            📊 Dashboard
+            🏠 Dashboard
           </NavLink>
           <NavLink 
-            active={isActive('/playlist-analyzer')} 
-            onClick={() => navigateTo('/playlist-analyzer')}
+            active={isActive('/music-timeline')} 
+            onClick={() => navigateTo('/music-timeline')}
           >
-            🎵 Analisar Playlist
+            🕒 Timeline Musical
           </NavLink>
           <NavLink 
-            active={isActive('/playlist-generator')} 
-            onClick={() => navigateTo('/playlist-generator')}
+            active={isActive('/artist-explorer')} 
+            onClick={() => navigateTo('/artist-explorer')}
           >
-            🤖 Gerar Playlist
+            🎤 Explorer de Artistas
+          </NavLink>
+          <NavLink 
+            active={isActive('/discovery-hub')} 
+            onClick={() => navigateTo('/discovery-hub')}
+          >
+            🔍 Discovery Hub
           </NavLink>
         </NavLinks>
 
@@ -179,19 +185,25 @@ const Navigation = () => {
           active={isActive('/dashboard')} 
           onClick={() => navigateTo('/dashboard')}
         >
-          📊 Dashboard
+          🏠 Dashboard
         </NavLink>
         <NavLink 
-          active={isActive('/playlist-analyzer')} 
-          onClick={() => navigateTo('/playlist-analyzer')}
+          active={isActive('/music-timeline')} 
+          onClick={() => navigateTo('/music-timeline')}
         >
-          🎵 Analisar Playlist
+          🕒 Timeline Musical
         </NavLink>
         <NavLink 
-          active={isActive('/playlist-generator')} 
-          onClick={() => navigateTo('/playlist-generator')}
+          active={isActive('/artist-explorer')} 
+          onClick={() => navigateTo('/artist-explorer')}
         >
-          🤖 Gerar Playlist
+          🎤 Explorer de Artistas
+        </NavLink>
+        <NavLink 
+          active={isActive('/discovery-hub')} 
+          onClick={() => navigateTo('/discovery-hub')}
+        >
+          🔍 Discovery Hub
         </NavLink>
       </MobileMenu>
     </NavContainer>
