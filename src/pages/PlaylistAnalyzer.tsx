@@ -11,6 +11,7 @@ import Navigation from '../components/Navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import PlaylistAccessInfo from '../components/PlaylistAccessInfo';
+import { testSpotifyConnection } from '../utils/spotifyTest';
 import type { Playlist, AudioFeatures } from '../types/spotify';
 
 const PageContainer = styled.div`
@@ -385,6 +386,26 @@ const PlaylistAnalyzer = () => {
 
         <PlaylistSelector>
           <SelectorTitle>Selecione uma Playlist para Analisar</SelectorTitle>
+          
+          <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+            <button
+              onClick={() => testSpotifyConnection()}
+              style={{
+                background: '#1db954',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🧪 Testar Conexão API
+            </button>
+            <span style={{ marginLeft: '1rem', fontSize: '0.8rem', opacity: 0.7 }}>
+              (Verifique o console do navegador para detalhes)
+            </span>
+          </div>
           
           <PlaylistAccessInfo />
           

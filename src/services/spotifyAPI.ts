@@ -23,7 +23,9 @@ spotifyAPI.interceptors.request.use(
   (config) => {
     const token = window.localStorage.getItem('spotify_token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers = config.headers || {};
+      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers['Content-Type'] = 'application/json';
     }
     return config;
   },
@@ -123,13 +125,30 @@ export const spotifyService = {
     }
     
     try {
+      console.log(`Iniciando busca de características para ${trackIds.length} faixas`);
+      
+      // Verificar se há token válido
+      const token = window.localStorage.getItem('spotify_token');
+      if (!token) {
+        throw new Error('Token de acesso não encontrado. Faça login novamente.');
+      }
+
       // Fazer requisições individuais para evitar problemas com muitos IDs
-      const audioFeaturesPromises = trackIds.map(async (trackId) => {
+      const audioFeaturesPromises = trackIds.map(async (trackId, index) => {
         try {
+          // Adicionar delay progressivo para evitar rate limiting
+          if (index > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100 * (index % 5)));
+          }
+          
           const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
+          console.log(`✓ Faixa ${index + 1}/${trackIds.length} processada: ${trackId}`);
           return response.data;
         } catch (error: any) {
-          console.warn(`Erro ao buscar características da faixa ${trackId}:`, error);
+          console.error(`✗ Erro na faixa ${index + 1}/${trackIds.length} (${trackId}):`, {
+            status: error.response?.status,
+            message: error.response?.data?.error?.message || error.message
+          });
           return null; // Retorna null se a faixa não puder ser analisada
         }
       });
@@ -138,10 +157,16 @@ export const spotifyService = {
       const results = await Promise.all(audioFeaturesPromises);
       
       // Filtrar resultados válidos
-      return results.filter((feature): feature is AudioFeatures => feature !== null);
+      const validResults = results.filter((feature): feature is AudioFeatures => feature !== null);
+      console.log(`Análise concluída: ${validResults.length}/${trackIds.length} faixas analisadas com sucesso`);
+      
+      return validResults;
     } catch (error: any) {
+      console.error('Erro geral na busca de características:', error);
       if (error.response?.status === 403) {
         throw new Error('Acesso negado às características de áudio das faixas.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Token expirado. Faça login novamente.');
       }
       throw error;
     }
@@ -150,10 +175,17 @@ export const spotifyService = {
   // Características de áudio de uma única faixa
   async getSingleAudioFeatures(trackId: string): Promise<AudioFeatures | null> {
     try {
+      console.log(`Buscando características de áudio para: ${trackId}`);
       const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
+      console.log(`Características encontradas para ${trackId}:`, response.data);
       return response.data;
     } catch (error: any) {
-      console.warn(`Erro ao buscar características da faixa ${trackId}:`, error);
+      console.error(`Erro ao buscar características da faixa ${trackId}:`, {
+        status: error.response?.status,
+        message: error.response?.data?.error?.message || error.message,
+        url: error.config?.url,
+        headers: error.config?.headers
+      });
       return null;
     }
   },
