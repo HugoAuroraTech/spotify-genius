@@ -10,6 +10,7 @@ import { spotifyService } from '../services/spotifyAPI';
 import Navigation from '../components/Navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import PlaylistAccessInfo from '../components/PlaylistAccessInfo';
 import type { Playlist, AudioFeatures } from '../types/spotify';
 
 const PageContainer = styled.div`
@@ -174,9 +175,24 @@ const PlaylistAnalyzer = () => {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Buscar playlists do usuário
-  const { data: playlists, loading: playlistsLoading, error: playlistsError } = useSpotifyQuery(
+  const { data: allPlaylists, loading: playlistsLoading, error: playlistsError } = useSpotifyQuery(
     () => spotifyService.getUserPlaylists(50)
   );
+
+  // Filtrar apenas playlists acessíveis (que tenham faixas e não sejam privadas de outros usuários)
+  const playlists = allPlaylists?.filter(playlist => {
+    // Incluir se:
+    // 1. Playlist tem faixas
+    // 2. Playlist é pública OU
+    // 3. Playlist pertence ao usuário logado OU
+    // 4. Playlist é colaborativa
+    return playlist.tracks.total > 0 && (
+      playlist.public || 
+      playlist.collaborative ||
+      !playlist.owner || // fallback se owner não estiver disponível
+      playlist.tracks.items?.length > 0 // se já temos acesso às tracks
+    );
+  });
 
   // Analisar playlist selecionada
   const analyzePlaylist = async (playlist: Playlist) => {
@@ -186,26 +202,74 @@ const PlaylistAnalyzer = () => {
     setAnalysisError(null);
 
     try {
-      // Buscar detalhes completos da playlist
-      const fullPlaylist = await spotifyService.getPlaylist(playlist.id);
-      
-      // Extrair IDs das faixas (máximo 100 por limitação da API)
-      const trackIds = fullPlaylist.tracks.items
-        .slice(0, 100)
-        .map(item => item.track.id)
-        .filter(id => id); // Remove faixas sem ID (podem ser locais)
-
-      if (trackIds.length === 0) {
-        throw new Error('Nenhuma faixa encontrada na playlist');
+      // Verificar se a playlist tem faixas
+      if (playlist.tracks.total === 0) {
+        throw new Error('Esta playlist está vazia');
       }
 
-      // Buscar características de áudio
-      const features = await spotifyService.getAudioFeatures(trackIds);
-      setAudioFeatures(features);
+      // Para playlists que já temos as tracks carregadas, usar diretamente
+      let trackIds: string[] = [];
+
+      if (playlist.tracks.items && playlist.tracks.items.length > 0) {
+        // Usar tracks já carregadas
+        trackIds = playlist.tracks.items
+          .slice(0, 100)
+          .map(item => item.track?.id)
+          .filter((id): id is string => !!id && id !== null);
+      } else {
+        try {
+          // Buscar detalhes completos da playlist apenas se necessário
+          const fullPlaylist = await spotifyService.getPlaylist(playlist.id);
+          trackIds = fullPlaylist.tracks.items
+            .slice(0, 100)
+            .map(item => item.track?.id)
+            .filter((id): id is string => !!id && id !== null);
+        } catch (playlistError) {
+          // Se falhar ao buscar a playlist completa, tentar usar apenas as que temos acesso
+          console.warn('Não foi possível acessar detalhes da playlist, tentando método alternativo');
+          throw new Error('Não foi possível acessar esta playlist. Verifique se você tem permissão para visualizá-la.');
+        }
+      }
+
+      if (trackIds.length === 0) {
+        throw new Error('Nenhuma faixa válida encontrada na playlist ou playlist contém apenas faixas locais');
+      }
+
+      // Buscar características de áudio em lotes para evitar rate limiting
+      const batchSize = 50; // Spotify permite até 100, mas vamos ser conservadores
+      const audioFeaturesPromises: Promise<any[]>[] = [];
+
+      for (let i = 0; i < trackIds.length; i += batchSize) {
+        const batch = trackIds.slice(i, i + batchSize);
+        audioFeaturesPromises.push(spotifyService.getAudioFeatures(batch));
+      }
+
+      const audioFeaturesBatches = await Promise.all(audioFeaturesPromises);
+      const allFeatures = audioFeaturesBatches.flat().filter(feature => feature !== null);
+
+      if (allFeatures.length === 0) {
+        throw new Error('Não foi possível analisar as características de áudio das faixas desta playlist');
+      }
+
+      setAudioFeatures(allFeatures);
       
     } catch (error) {
       console.error('Erro ao analisar playlist:', error);
-      setAnalysisError(error instanceof Error ? error.message : 'Erro ao analisar playlist');
+      
+      let errorMessage = 'Erro ao analisar playlist';
+      if (error instanceof Error) {
+        if (error.message.includes('403')) {
+          errorMessage = 'Acesso negado. Esta playlist pode ser privada ou você não tem permissão para acessá-la.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Playlist não encontrada. Ela pode ter sido deletada ou estar inacessível.';
+        } else if (error.message.includes('401')) {
+          errorMessage = 'Sessão expirada. Faça login novamente.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setAnalysisError(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }
@@ -303,6 +367,8 @@ const PlaylistAnalyzer = () => {
 
         <PlaylistSelector>
           <SelectorTitle>Selecione uma Playlist para Analisar</SelectorTitle>
+          
+          <PlaylistAccessInfo />
           
           {playlistsLoading ? (
             <LoadingSpinner text="Carregando suas playlists..." />

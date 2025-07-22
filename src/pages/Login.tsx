@@ -11,9 +11,11 @@ const SCOPES = [
   "user-read-email", 
   "user-top-read",
   "playlist-read-private",
+  "playlist-read-collaborative",
   "playlist-modify-public",
   "playlist-modify-private",
-  "user-follow-read"
+  "user-follow-read",
+  "user-library-read"
 ];
 
 const LoginContainer = styled.div`

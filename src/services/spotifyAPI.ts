@@ -103,15 +103,35 @@ export const spotifyService = {
 
   // Buscar playlist específica
   async getPlaylist(playlistId: string): Promise<Playlist> {
-    const response = await spotifyAPI.get<Playlist>(`/playlists/${playlistId}`);
-    return response.data;
+    try {
+      const response = await spotifyAPI.get<Playlist>(`/playlists/${playlistId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        throw new Error('Acesso negado à playlist. Verifique se ela é pública ou se você tem permissão para acessá-la.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Playlist não encontrada.');
+      }
+      throw error;
+    }
   },
 
   // Características de áudio de múltiplas faixas
   async getAudioFeatures(trackIds: string[]): Promise<AudioFeatures[]> {
-    const ids = trackIds.join(',');
-    const response = await spotifyAPI.get<{ audio_features: AudioFeatures[] }>(`/audio-features?ids=${ids}`);
-    return response.data.audio_features.filter(feature => feature !== null);
+    if (trackIds.length === 0) {
+      return [];
+    }
+    
+    try {
+      const ids = trackIds.join(',');
+      const response = await spotifyAPI.get<{ audio_features: AudioFeatures[] }>(`/audio-features?ids=${ids}`);
+      return response.data.audio_features.filter(feature => feature !== null);
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        throw new Error('Acesso negado às características de áudio das faixas.');
+      }
+      throw error;
+    }
   },
 
   // Recomendações
