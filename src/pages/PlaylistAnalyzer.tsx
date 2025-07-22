@@ -12,6 +12,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import PlaylistAccessInfo from '../components/PlaylistAccessInfo';
 import { testSpotifyConnection } from '../utils/spotifyTest';
+import { validateSpotifyAPI } from '../utils/apiValidation';
 import type { Playlist, AudioFeatures } from '../types/spotify';
 
 const PageContainer = styled.div`
@@ -238,32 +239,14 @@ const PlaylistAnalyzer = () => {
         throw new Error('Nenhuma faixa válida encontrada na playlist ou playlist contém apenas faixas locais');
       }
 
-      // Buscar características de áudio em lotes pequenos para evitar rate limiting
-      const batchSize = 10; // Lotes pequenos para evitar problemas
-      const allFeatures: any[] = [];
+      // Buscar características de áudio usando o novo método otimizado
+      console.log(`🎵 Iniciando análise de ${trackIds.length} faixas...`);
       setAnalysisProgress({ current: 0, total: trackIds.length });
 
-      for (let i = 0; i < trackIds.length; i += batchSize) {
-        const batch = trackIds.slice(i, i + batchSize);
-        
-        try {
-          // Pequeno delay entre lotes para evitar rate limiting
-          if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-
-          const batchFeatures = await spotifyService.getAudioFeatures(batch);
-          allFeatures.push(...batchFeatures);
-
-          // Atualizar progresso
-          const processed = Math.min(i + batchSize, trackIds.length);
-          setAnalysisProgress({ current: processed, total: trackIds.length });
-          console.log(`Processado ${processed} de ${trackIds.length} faixas`);
-        } catch (error) {
-          console.warn(`Erro ao processar lote ${i / batchSize + 1}:`, error);
-          // Continuar mesmo se um lote falhar
-        }
-      }
+      const allFeatures = await spotifyService.getAudioFeatures(trackIds);
+      
+      // Simular progresso para melhor UX
+      setAnalysisProgress({ current: trackIds.length, total: trackIds.length });
 
       if (allFeatures.length === 0) {
         throw new Error('Não foi possível analisar as características de áudio das faixas desta playlist');
@@ -387,7 +370,7 @@ const PlaylistAnalyzer = () => {
         <PlaylistSelector>
           <SelectorTitle>Selecione uma Playlist para Analisar</SelectorTitle>
           
-          <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: '1rem', textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => testSpotifyConnection()}
               style={{
@@ -400,11 +383,25 @@ const PlaylistAnalyzer = () => {
                 fontSize: '0.9rem'
               }}
             >
-              🧪 Testar Conexão API
+              🧪 Testar Conexão Legacy
             </button>
-            <span style={{ marginLeft: '1rem', fontSize: '0.8rem', opacity: 0.7 }}>
+            <button
+              onClick={() => validateSpotifyAPI()}
+              style={{
+                background: '#1ed760',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🚀 Validar Nova API
+            </button>
+            <div style={{ fontSize: '0.8rem', opacity: 0.7, textAlign: 'center' }}>
               (Verifique o console do navegador para detalhes)
-            </span>
+            </div>
           </div>
           
           <PlaylistAccessInfo />

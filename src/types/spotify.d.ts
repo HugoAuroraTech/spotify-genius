@@ -93,6 +93,14 @@ export interface AudioFeatures {
   tempo: number;
   duration_ms: number;
   time_signature: number;
+  analysis_url?: string;
+  track_href?: string;
+  type?: 'audio_features';
+  uri?: string;
+}
+
+export interface AudioFeaturesResponse {
+  audio_features: (AudioFeatures | null)[];
 }
 
 export interface RecommendationSeed {

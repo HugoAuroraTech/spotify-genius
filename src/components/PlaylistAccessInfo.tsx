@@ -52,7 +52,7 @@ const PlaylistAccessInfo = () => {
       </InfoText>
       <InfoList>
         <li>Tente analisar suas próprias playlists ou playlists públicas do Spotify</li>
-        <li>Para playlists grandes, o processo pode demorar alguns minutos</li>
+        <li>🚀 Nova versão otimizada: processa até 100 faixas simultaneamente para melhor performance</li>
         <li>Se houver muitos erros, aguarde alguns minutos antes de tentar novamente</li>
       </InfoList>
     </InfoContainer>

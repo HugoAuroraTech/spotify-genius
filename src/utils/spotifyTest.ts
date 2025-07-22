@@ -18,13 +18,13 @@ export const testSpotifyConnection = async () => {
       // Testar busca de audio features para uma música
       console.log('3. Testando audio features...');
       const trackId = topTracks[0].id;
-      const audioFeatures = await spotifyService.getSingleAudioFeatures(trackId);
+      const audioFeatures = await spotifyService.getAudioFeatures([trackId]);
       
-      if (audioFeatures) {
+      if (audioFeatures.length > 0) {
         console.log('✅ Audio features obtidas:', {
-          danceability: audioFeatures.danceability,
-          energy: audioFeatures.energy,
-          valence: audioFeatures.valence
+          danceability: audioFeatures[0].danceability,
+          energy: audioFeatures[0].energy,
+          valence: audioFeatures[0].valence
         });
       } else {
         console.log('❌ Não foi possível obter audio features');
@@ -56,13 +56,13 @@ export const testSingleAudioFeature = async (trackId: string) => {
       console.log('Token preview:', `${token.substring(0, 20)}...`);
     }
     
-    const audioFeature = await spotifyService.getSingleAudioFeatures(trackId);
+    const audioFeatures = await spotifyService.getAudioFeatures([trackId]);
     
-    if (audioFeature) {
-      console.log('✅ Audio feature obtida com sucesso:', audioFeature);
-      return audioFeature;
+    if (audioFeatures.length > 0) {
+      console.log('✅ Audio feature obtida com sucesso:', audioFeatures[0]);
+      return audioFeatures[0];
     } else {
-      console.log('❌ Audio feature retornou null');
+      console.log('❌ Audio feature retornou array vazio');
       return null;
     }
   } catch (error) {

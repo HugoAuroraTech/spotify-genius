@@ -118,14 +118,14 @@ export const spotifyService = {
     }
   },
 
-  // Características de áudio de múltiplas faixas
+  // Características de áudio de múltiplas faixas - usando o endpoint correto com ?ids=
   async getAudioFeatures(trackIds: string[]): Promise<AudioFeatures[]> {
     if (trackIds.length === 0) {
       return [];
     }
-    
+
     try {
-      console.log(`Iniciando busca de características para ${trackIds.length} faixas`);
+      console.log(`🎵 Iniciando busca de características para ${trackIds.length} faixas`);
       
       // Verificar se há token válido
       const token = window.localStorage.getItem('spotify_token');
@@ -133,59 +133,76 @@ export const spotifyService = {
         throw new Error('Token de acesso não encontrado. Faça login novamente.');
       }
 
-      // Fazer requisições individuais para evitar problemas com muitos IDs
-      const audioFeaturesPromises = trackIds.map(async (trackId, index) => {
+      // Filtrar IDs válidos (remover nulls, undefined, strings vazias)
+      const validTrackIds = trackIds.filter(id => id && typeof id === 'string' && id.trim().length > 0);
+      
+      if (validTrackIds.length === 0) {
+        console.warn('Nenhum ID de faixa válido encontrado');
+        return [];
+      }
+
+      // A API do Spotify permite até 100 faixas por requisição
+      const BATCH_SIZE = 100;
+      const allAudioFeatures: AudioFeatures[] = [];
+
+      // Processar em lotes de 100 faixas
+      for (let i = 0; i < validTrackIds.length; i += BATCH_SIZE) {
+        const batch = validTrackIds.slice(i, i + BATCH_SIZE);
+        console.log(`📦 Lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(validTrackIds.length / BATCH_SIZE)}: ${batch.length} faixas`);
+        
         try {
-          // Adicionar delay progressivo para evitar rate limiting
-          if (index > 0) {
-            await new Promise(resolve => setTimeout(resolve, 100 * (index % 5)));
+          // Usar o endpoint correto com query parameter ?ids=
+          const idsParam = batch.join(',');
+          const response = await spotifyAPI.get<{ audio_features: (AudioFeatures | null)[] }>(`/audio-features?ids=${encodeURIComponent(idsParam)}`);
+          
+          // Filtrar resultados válidos (a API pode retornar null para faixas não encontradas)
+          const validFeatures = response.data.audio_features.filter((feature): feature is AudioFeatures => feature !== null);
+          
+          allAudioFeatures.push(...validFeatures);
+          console.log(`✅ ${validFeatures.length}/${batch.length} faixas processadas`);
+          
+          // Delay entre lotes para evitar rate limiting
+          if (i + BATCH_SIZE < validTrackIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
           
-          const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
-          console.log(`✓ Faixa ${index + 1}/${trackIds.length} processada: ${trackId}`);
-          return response.data;
         } catch (error: any) {
-          console.error(`✗ Erro na faixa ${index + 1}/${trackIds.length} (${trackId}):`, {
+          console.error(`❌ Erro no lote ${Math.floor(i / BATCH_SIZE) + 1}:`, {
             status: error.response?.status,
-            message: error.response?.data?.error?.message || error.message
+            message: error.response?.data?.error?.message || error.message,
+            batchSize: batch.length
           });
-          return null; // Retorna null se a faixa não puder ser analisada
+          
+          // Se o lote falhar, continuar com o próximo
+          continue;
         }
-      });
-
-      // Esperar todas as requisições terminarem
-      const results = await Promise.all(audioFeaturesPromises);
+      }
       
-      // Filtrar resultados válidos
-      const validResults = results.filter((feature): feature is AudioFeatures => feature !== null);
-      console.log(`Análise concluída: ${validResults.length}/${trackIds.length} faixas analisadas com sucesso`);
+      console.log(`🎉 Análise concluída: ${allAudioFeatures.length}/${validTrackIds.length} faixas analisadas com sucesso`);
+      return allAudioFeatures;
       
-      return validResults;
     } catch (error: any) {
-      console.error('Erro geral na busca de características:', error);
+      console.error('❌ Erro geral na busca de características:', error);
+      
       if (error.response?.status === 403) {
-        throw new Error('Acesso negado às características de áudio das faixas.');
+        throw new Error('Acesso negado às características de áudio das faixas. Verifique se você tem as permissões necessárias.');
       } else if (error.response?.status === 401) {
         throw new Error('Token expirado. Faça login novamente.');
+      } else if (error.response?.status === 429) {
+        throw new Error('Muitas requisições. Aguarde um momento e tente novamente.');
       }
+      
       throw error;
     }
   },
 
-  // Características de áudio de uma única faixa
+  // Características de áudio de uma única faixa - usar getAudioFeatures([trackId]) em vez disso
   async getSingleAudioFeatures(trackId: string): Promise<AudioFeatures | null> {
     try {
-      console.log(`Buscando características de áudio para: ${trackId}`);
-      const response = await spotifyAPI.get<AudioFeatures>(`/audio-features/${trackId}`);
-      console.log(`Características encontradas para ${trackId}:`, response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error(`Erro ao buscar características da faixa ${trackId}:`, {
-        status: error.response?.status,
-        message: error.response?.data?.error?.message || error.message,
-        url: error.config?.url,
-        headers: error.config?.headers
-      });
+      const result = await this.getAudioFeatures([trackId]);
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error(`Erro ao buscar características da faixa ${trackId}:`, error);
       return null;
     }
   },
