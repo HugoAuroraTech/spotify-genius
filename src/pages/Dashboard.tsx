@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { useUserProfile, useTopArtists, useTopTracks } from '../hooks/useSpotifyData';
-import { useAuth } from '../hooks/useAuth';
 import Navigation from '../components/Navigation';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';

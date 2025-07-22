@@ -3,9 +3,8 @@ import styled from 'styled-components';
 import { spotifyService } from '../services/spotifyAPI';
 import { useUserProfile } from '../hooks/useSpotifyData';
 import Navigation from '../components/Navigation';
-import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import type { Artist, Track, Recommendations } from '../types/spotify';
+import type { Artist, Track } from '../types/spotify';
 
 const PageContainer = styled.div`
   min-height: 100vh;

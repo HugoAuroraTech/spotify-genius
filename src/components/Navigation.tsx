@@ -115,11 +115,7 @@ const MobileMenu = styled.div<{ isOpen: boolean }>`
   }
 `;
 
-interface NavigationProps {
-  currentPage?: string;
-}
-
-const Navigation = ({ currentPage = 'dashboard' }: NavigationProps) => {
+const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();

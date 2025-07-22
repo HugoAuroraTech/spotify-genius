@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import { 
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell
 } from 'recharts';
 import { useSpotifyQuery } from '../hooks/useSpotifyData';
@@ -391,12 +391,12 @@ const PlaylistAnalyzer = () => {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ key, percent }) => `${key} ${(percent * 100).toFixed(0)}%`}
+                          label={({ key, percent }) => `${key} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="count"
                         >
-                          {getKeyData().map((entry, index) => (
+                          {getKeyData().map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
